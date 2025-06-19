@@ -1,0 +1,58 @@
+---
+title: "Framing Biden on Twitter"
+author: "Nikolas Neubauer"
+format: html
+editor: visual
+---
+
+```{r}
+# Load libraries
+library(ndjson)
+library(quanteda)
+library(ggplot2)
+library(wordcloud)
+library(RColorBrewer)
+library(dplyr)
+
+# Load data
+tweets_raw <- ndjson::stream_in("DT.ndjson")
+
+# Filter for Biden tweets
+tweets_biden <- tweets_raw %>%
+  filter(grepl("Biden", text, ignore.case = TRUE))
+
+# Extract text + time
+tweet_texts <- tweets_biden$text
+timestamps <- tweets_biden$created_at
+
+# Corpus
+corpus_biden <- corpus(tweet_texts, docvars = data.frame(timestamp = timestamps))
+
+# Stopwords
+custom_stopwords <- c("biden", "joe", "joebiden", "sleepy", "biden's", "rt", "amp", "s")
+
+# Preprocessing
+tokens_biden <- tokens(corpus_biden,
+                       remove_punct = TRUE,
+                       remove_symbols = TRUE,
+                       remove_numbers = TRUE) %>%
+  tokens_tolower() %>%
+  tokens_remove(pattern = c(stopwords("en"), custom_stopwords))
+
+dfm_biden <- dfm(tokens_biden)
+
+top_words <- topfeatures(dfm_biden, 20)
+top_df <- data.frame(term = names(top_words), freq = as.numeric(top_words))
+top15 <- head(top_df, 15)
+
+ggplot(top15, aes(x = reorder(term, freq), y = freq)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  coord_flip() +
+  labs(title = "Top 15 Words in Trump's Tweets Referencing Biden",
+       x = "Word", y = "Frequency")
+set.seed(123)
+wordcloud(words = names(top_words),
+          freq = top_words,
+          max.words = 100,
+          colors = brewer.pal(8, "Dark2"),
+          random.order = FALSE)

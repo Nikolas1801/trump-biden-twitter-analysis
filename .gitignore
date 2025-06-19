@@ -1,4 +1,10 @@
-# History files
+DT.ndjson
+.Rhistory
+.RData
+.Rproj.user/
+
+
+#History files
 .Rhistory
 .Rapp.history
 
